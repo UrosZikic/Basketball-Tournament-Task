@@ -453,6 +453,125 @@ function quarterFinals(quarterFinalMatches) {
       " - " +
       quarterFinalMatches[3][1].Team
   );
+
+  let semiFinalsGroups = [];
+  console.log(" ");
+  console.log("Četvrtfinale:");
+  for (let i = 0; i <= 3; i++) {
+    const rankDifference =
+      (quarterFinalMatches[i][0].FIBARanking -
+        quarterFinalMatches[i][1].FIBARanking) *
+      -1;
+
+    const teamOneScore = Math.ceil(Math.random() * 100 + 1) + 50;
+    const teamTwoScore =
+      Math.ceil(Math.random() * 100 + 1) + 50 - rankDifference;
+
+    semiFinalsGroups = [
+      ...semiFinalsGroups,
+      teamOneScore > teamTwoScore
+        ? quarterFinalMatches[i][0]
+        : quarterFinalMatches[i][1],
+    ];
+    console.log(
+      quarterFinalMatches[i][0].Team +
+        " - " +
+        quarterFinalMatches[i][1].Team +
+        ` (${teamOneScore} - ${teamTwoScore}) `
+    );
+  }
+  console.log(" ");
+  semiFinals(semiFinalsGroups);
+}
+
+function semiFinals(semiFinalsGroups) {
+  let finalsGroups = [];
+  let thirdPlaceGroups = [];
+
+  console.log("Polufinale: ");
+  for (let i = 0; i <= 2; i += 2) {
+    const rankDifference =
+      (semiFinalsGroups[i].FIBARanking - semiFinalsGroups[i + 1].FIBARanking) *
+      -1;
+
+    const teamOneScore = Math.ceil(Math.random() * 100 + 1) + 50;
+    const teamTwoScore =
+      Math.ceil(Math.random() * 100 + 1) + 50 - rankDifference;
+
+    finalsGroups = [
+      ...finalsGroups,
+      teamOneScore > teamTwoScore
+        ? semiFinalsGroups[i]
+        : semiFinalsGroups[i + 1],
+    ];
+    thirdPlaceGroups = [
+      ...thirdPlaceGroups,
+      teamOneScore > teamTwoScore
+        ? semiFinalsGroups[i + 1]
+        : semiFinalsGroups[i],
+    ];
+    console.log(
+      semiFinalsGroups[i].Team +
+        " - " +
+        semiFinalsGroups[i + 1].Team +
+        ` (${teamOneScore} - ${teamTwoScore}) `
+    );
+  }
+
+  thirdPlaceFinal(finalsGroups, thirdPlaceGroups);
+}
+
+function thirdPlaceFinal(finalsGroups, thirdPlaceGroup) {
+  let winner;
+
+  for (let i = 0; i < 2; i += 2) {
+    const rankDifference =
+      (thirdPlaceGroup[i].FIBARanking - thirdPlaceGroup[i + 1].FIBARanking) *
+      -1;
+
+    const teamOneScore = Math.ceil(Math.random() * 100 + 1) + 50;
+    const teamTwoScore =
+      Math.ceil(Math.random() * 100 + 1) + 50 - rankDifference;
+
+    winner =
+      teamOneScore > teamTwoScore
+        ? thirdPlaceGroup[i].Team
+        : thirdPlaceGroup[i + 1].Team;
+  }
+
+  finals(finalsGroups, winner);
+}
+
+function finals(finalsGroups, thirdPlaceWinner) {
+  console.log(" ");
+  console.log("Finale: ");
+
+  let finalsWinner;
+
+  for (let i = 0; i < 2; i += 2) {
+    const rankDifference =
+      (finalsGroups[i].FIBARanking - finalsGroups[i + 1].FIBARanking) * -1;
+
+    const teamOneScore = Math.ceil(Math.random() * 100 + 1) + 50;
+    const teamTwoScore =
+      Math.ceil(Math.random() * 100 + 1) + 50 - rankDifference;
+
+    finalsWinner =
+      teamOneScore > teamTwoScore
+        ? [finalsGroups[i].Team, finalsGroups[i + 1].Team]
+        : [finalsGroups[i + 1].Team, finalsGroups[i].Team];
+    console.log(
+      finalsGroups[i].Team +
+        " - " +
+        finalsGroups[i + 1].Team +
+        ` (${teamOneScore} - ${teamTwoScore}) `
+    );
+  }
+  console.log(" ");
+  console.log("Medalje: ");
+  console.log(" " + finalsWinner[0]);
+  console.log(" " + finalsWinner[1]);
+  console.log(" " + thirdPlaceWinner);
 }
 
 module.exports = calculateProbability;
