@@ -121,8 +121,9 @@ const r = (team, group, winProbability, i, groupData, category) => {
 };
 
 function sortGroupPhase(group, category) {
+  // preuzeti rezultati simulacije
   let groupGameResults = group.map((item, i) => item.results);
-
+  // podaci o rezultatima meceva ce se skladistiti u ovom nizu
   let groupPlacements = [
     [
       {
@@ -165,23 +166,30 @@ function sortGroupPhase(group, category) {
       },
     ],
   ];
-  // console.log(groupPlacements[1][0].won, 1);
 
+  // ukoliko su sve simulacije zavrsene, niz je spreman da primi informacije o rezultatima
   if (group[3].results.length === 3) {
     console.log("Grupna faza - I kolo:");
     console.log(`Grupa: ${category}:`);
     for (let i = 0; i < 6; i++) {
+      // Petlja kroz kondicionale prelazi kroz sve grupne meceve i popunjuje svaki objekat u nizu podacima koji im pripadaju
       if (i < 3) {
         console.log(
           `${group[0].Team} - ${group[i + 1].Team} (${groupGameResults[0][i]}:${
             groupGameResults[i + 1][0]
           })`
         );
+        // nizu objektata se svakom objektu dodeljuju ime tima i njihova pozicija na rang listi
         groupPlacements[0][0].Team = group[0].Team;
         groupPlacements[0][0].FIBARanking = group[0].FIBARanking;
         groupPlacements[i + 1][0].Team = group[i + 1].Team;
         groupPlacements[i + 1][0].FIBARanking = group[i + 1].FIBARanking;
-        if (groupGameResults[0][i] > groupGameResults[i + 1][0]) {
+
+        // na osnovu rezultata, timovi za svaki mec dobijaju azurirane podatke u njihov objekat
+
+        if (groupGameResults[0][i] >= groupGameResults[i + 1][0]) {
+          if (groupGameResults[0][i] === groupGameResults[i + 1][0])
+            groupGameResults[0][0].received += 1;
           groupPlacements[0][0].won += 1;
           groupPlacements[0][0].points += 2;
           groupPlacements[i + 1][0].lost += 1;
@@ -206,7 +214,9 @@ function sortGroupPhase(group, category) {
           }:${groupGameResults[i - 1][1]})`
         );
 
-        if (groupGameResults[1][i - 2] > groupGameResults[i - 1][1]) {
+        if (groupGameResults[1][i - 2] >= groupGameResults[i - 1][1]) {
+          if (groupGameResults[1][i - 2] === groupGameResults[i - 1][1])
+            groupGameResults[1][0].received += 1;
           groupPlacements[1][0].won += 1;
           groupPlacements[1][0].points += 2;
           groupPlacements[i - 1][0].lost += 1;
@@ -228,7 +238,9 @@ function sortGroupPhase(group, category) {
         console.log(
           `${group[2].Team} - ${group[3].Team} (${groupGameResults[2][2]}:${groupGameResults[3][2]})`
         );
-        if (groupGameResults[2][2] > groupGameResults[3][2]) {
+        if (groupGameResults[2][2] >= groupGameResults[3][2]) {
+          if (groupGameResults[2][2] === groupGameResults[3][2])
+            groupGameResults[2][0].received += 1;
           groupPlacements[2][0].won += 1;
           groupPlacements[2][0].points += 2;
           groupPlacements[3][0].lost += 1;
@@ -252,14 +264,17 @@ function sortGroupPhase(group, category) {
 
   if (groupPlacements[3][0].won + groupPlacements[3][0].lost === 3) {
     const x = groupPlacements.sort((a, b) => {
-      // Compare points first
-      if (b[0].points !== a[0].points) {
-        return b[0].points - a[0].points;
-      }
-      // If points are the same, compare by difference
-      return b[0].difference - a[0].difference;
-    });
+      // razvrstavamo timove primarno po poenima
+      if (b[0].points !== a[0].points) return b[0].points - a[0].points;
 
+      // ukoliko timovi poseduju isto broj poena, onda razvrstavamo prema razlici
+      if (b[0].difference !== a[0].difference)
+        return b[0].difference - a[0].difference;
+
+      // u slucaju da timovi koje uporedjujemo poseduju isto broj poena i istu razliku datih i primljenih koseva, onda ih rangiramo prema postignutim poenima.
+      return b[0].scored - a[0].scored;
+    });
+    console.log(" ");
     console.log(
       ` Grupa ${category} (Ime - pobede/porazi/bodovi/postignuti koševi/primljeni koševi/koš razlika):`
     );
@@ -270,44 +285,48 @@ function sortGroupPhase(group, category) {
         } / ${x[i][0].scored} / ${x[i][0].received} / ${x[i][0].difference}`
       );
     }
+    console.log(" ");
 
+    // prvorangirane svrstavamo u ovu promenljivu
     qualifiers = [...qualifiers, x[0]];
+    // drugorangirane u ovo
     secondPlaceQualifiers = [...secondPlaceQualifiers, x[1]];
+    // trecerangirane u ovu
     thirdPlaceQualifiers = [...thirdPlaceQualifiers, x[2]];
 
+    // ukoliko su prvih 9 timova uneti, onda ih rangiramo medjusobno ovaj put kako bi dobili tacan prikaz najboljeg i najgoreg tima
     if (qualifiers.length >= 3 && thirdPlaceQualifiers.length >= 3) {
-      let confirmedQualified = qualifiers.sort((a, b) => {
-        if (b[0].points !== a[0].points) {
-          return b[0].points - a[0].points;
-        }
-        return b[0].difference - a[0].difference;
-      });
+      // pravimo odvojene promenljive koje ce skladistiti po 3 tima, od 3 najbolja do 3 najgore rangirana
+      let confirmedQualified = [];
+      let secondPlaceQualified = [];
+      let thirdPlaceQualified = [];
+      // pozivamo funkciju kojoj plasiramo kvalifikovane koje onda dodatno sortiramo tako da zaista dobijemo najboljeg > najgoreg u svakoj ovih promenljivih
+      confirmedQualified = rankTeams(qualifiers);
+      secondPlaceQualified = rankTeams(secondPlaceQualifiers);
+      thirdPlaceQualified = rankTeams(thirdPlaceQualifiers);
+      // funckija izvrsava sortiranje timova
+      function rankTeams(qualifiers) {
+        return qualifiers.sort((a, b) => {
+          // razvrstavamo timove primarno po poenima
+          if (b[0].points !== a[0].points) {
+            return b[0].points - a[0].points;
+          }
+          // ukoliko timovi poseduju isto broj poena, onda razvrstavamo prema razlici
+          if (b[0].difference !== a[0].difference)
+            return b[0].difference - a[0].difference;
 
-      let secondPlaceQualified = secondPlaceQualifiers.sort((a, b) => {
-        // Compare points first
-        if (b[0].points !== a[0].points) {
-          return b[0].points - a[0].points;
-        }
-        // If points are the same, compare by difference
-        return b[0].difference - a[0].difference;
-      });
-
-      let thirdPlaceQualified = thirdPlaceQualifiers.sort((a, b) => {
-        // Compare points first
-        if (b[0].points !== a[0].points) {
-          return b[0].points - a[0].points;
-        }
-        // If points are the same, compare by difference
-        return b[0].difference - a[0].difference;
-      });
-      // 3rd third placer will not qualify
+          // u slucaju da timovi koje uporedjujemo poseduju isto broj poena i istu razliku datih i primljenih koseva, onda ih rangiramo prema postignutim poenima.
+          return b[0].scored - a[0].scored;
+        });
+      }
+      // treceplasirani tim, ili deveti tim se nece plasirati dalje
       qualifiers = [
         ...confirmedQualified,
         ...secondPlaceQualified,
         thirdPlaceQualified[0],
         thirdPlaceQualified[1],
       ];
-
+      // pozivamo funkciju koja ce podeliti plasirane u cetvrtfinale
       handleQualifiers(qualifiers);
     }
   }
@@ -319,17 +338,19 @@ function handleQualifiers(qualifier) {
     ["Nemačka", "Francuska", "Brazil", "Japan"],
     ["Sjedinjene Države", "Srbija", "Južni Sudan", "Puerto Riko"],
   ];
-
+  // grupe delimo u parove gde se sortiraju od najbolje rangiranog do najslabije rangiranog
   let groupD = [qualifier[0][0], qualifier[1][0]];
   let groupE = [qualifier[2][0], qualifier[3][0]];
   let groupF = [qualifier[4][0], qualifier[5][0]];
   let groupG = [qualifier[6][0], qualifier[7][0]];
 
+  // promenljive ce primiti timove koji ce se suociti u cetvrtfinalu
   let eliminationPhaseMatchOne = [];
   let eliminationPhaseMatchTwo = [];
   let eliminationPhaseMatchThree = [];
   let eliminationPhaseMatchFour = [];
 
+  // petlja proverava da li su potencionalni protivnici vec igrali u grupi i shodno tome ih rangiraju tako da se ne sretnu u cetvrtfinalu.
   for (let i = 0; i <= 2; i++) {
     if (
       originalGroup[i].includes(qualifier[0][0].Team) &&
@@ -463,13 +484,16 @@ function quarterFinals(quarterFinalMatches) {
         quarterFinalMatches[i][1].FIBARanking) *
       -1;
 
-    const teamOneScore = Math.ceil(Math.random() * 100 + 1) + 50;
+    let teamOneScore = Math.ceil(Math.random() * 100 + 1) + 50;
     const teamTwoScore =
       Math.ceil(Math.random() * 100 + 1) + 50 - rankDifference;
 
+    teamOneScore =
+      teamOneScore === teamTwoScore ? teamOneScore + 1 : teamOneScore;
+
     semiFinalsGroups = [
       ...semiFinalsGroups,
-      teamOneScore > teamTwoScore
+      teamOneScore >= teamTwoScore
         ? quarterFinalMatches[i][0]
         : quarterFinalMatches[i][1],
     ];
@@ -494,9 +518,12 @@ function semiFinals(semiFinalsGroups) {
       (semiFinalsGroups[i].FIBARanking - semiFinalsGroups[i + 1].FIBARanking) *
       -1;
 
-    const teamOneScore = Math.ceil(Math.random() * 100 + 1) + 50;
+    let teamOneScore = Math.ceil(Math.random() * 100 + 1) + 50;
     const teamTwoScore =
       Math.ceil(Math.random() * 100 + 1) + 50 - rankDifference;
+
+    teamOneScore =
+      teamOneScore === teamTwoScore ? teamOneScore + 1 : teamOneScore;
 
     finalsGroups = [
       ...finalsGroups,
@@ -525,18 +552,30 @@ function thirdPlaceFinal(finalsGroups, thirdPlaceGroup) {
   let winner;
 
   for (let i = 0; i < 2; i += 2) {
+    console.log(" ");
+    console.log("Utakmica za treće mesto:");
     const rankDifference =
       (thirdPlaceGroup[i].FIBARanking - thirdPlaceGroup[i + 1].FIBARanking) *
       -1;
 
-    const teamOneScore = Math.ceil(Math.random() * 100 + 1) + 50;
+    let teamOneScore = Math.ceil(Math.random() * 100 + 1) + 50;
     const teamTwoScore =
       Math.ceil(Math.random() * 100 + 1) + 50 - rankDifference;
+
+    teamOneScore =
+      teamOneScore === teamTwoScore ? teamOneScore + 1 : teamOneScore;
 
     winner =
       teamOneScore > teamTwoScore
         ? thirdPlaceGroup[i].Team
         : thirdPlaceGroup[i + 1].Team;
+
+    console.log(
+      thirdPlaceGroup[i].Team +
+        " - " +
+        thirdPlaceGroup[i + 1].Team +
+        ` (${teamOneScore} - ${teamTwoScore}) `
+    );
   }
 
   finals(finalsGroups, winner);
@@ -552,9 +591,12 @@ function finals(finalsGroups, thirdPlaceWinner) {
     const rankDifference =
       (finalsGroups[i].FIBARanking - finalsGroups[i + 1].FIBARanking) * -1;
 
-    const teamOneScore = Math.ceil(Math.random() * 100 + 1) + 50;
+    let teamOneScore = Math.ceil(Math.random() * 100 + 1) + 50;
     const teamTwoScore =
       Math.ceil(Math.random() * 100 + 1) + 50 - rankDifference;
+
+    teamOneScore =
+      teamOneScore === teamTwoScore ? teamOneScore + 1 : teamOneScore;
 
     finalsWinner =
       teamOneScore > teamTwoScore
@@ -567,11 +609,10 @@ function finals(finalsGroups, thirdPlaceWinner) {
         ` (${teamOneScore} - ${teamTwoScore}) `
     );
   }
+  finalsWinner = [...finalsWinner, thirdPlaceWinner];
   console.log(" ");
   console.log("Medalje: ");
-  console.log(" " + finalsWinner[0]);
-  console.log(" " + finalsWinner[1]);
-  console.log(" " + thirdPlaceWinner);
+  finalsWinner.map((item) => console.log("  " + item));
 }
 
 module.exports = calculateProbability;
